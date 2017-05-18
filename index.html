@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<body>
+<p>Key
+    <ul>
+        <li>Blue = Brazil, 2014</li>
+        <li>Red = Brazil, 2014 same mean with Norwegian inequality (G = ~0.25)</li>
+</p>
+<svg id="pdf" width="400" height="400"></svg>
+<svg id="histogram" width="400" height="400"></svg>
+<svg id="cdf" width="400" height="400"></svg>
+<svg id="quantile" width="400" height="400"></svg>
+<svg id="lorenz" width="400" height="400"></svg>
+<svg id="deciles" width="400" height="400"></svg>
+<body>
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script src="https://cdn.jsdelivr.net/jstat/latest/jstat.min.js"></script>
+<script src="distributions.js"></script>
+<script>
+
+// Complex wiggly distribution, lognormal with normals mixed in
+var y, fy;
+y = [0.0, 100.10010010010011, 200.20020020020021, 300.3003003003003, 400.40040040040043, 500.50050050050055, 600.6006006006006, 800.8008008008009, 1001.0010010010011, 1201.2012012012012, 1401.4014014014015, 1601.6016016016017, 1801.801801801802, 2002.0020020020022, 2202.2022022022024, 2402.4024024024025, 2602.602602602603, 2802.802802802803, 3003.0030030030034, 3203.2032032032034, 3603.603603603604, 4004.0040040040044, 4404.404404404405, 4804.804804804805, 6306.306306306306, 6706.706706706707, 7107.107107107107, 7507.507507507508, 7907.907907907908, 8308.30830830831, 8708.70870870871, 9109.10910910911, 9409.40940940941, 9809.80980980981, 10210.21021021021, 10610.61061061061, 11011.011011011013, 11811.811811811813, 12212.212212212213, 12512.512512512514, 12912.912912912914, 13313.313313313314, 13713.713713713714, 14114.114114114114, 14914.914914914916, 15715.715715715716, 16516.516516516516, 17317.31731731732, 18818.81881881882, 20420.42042042042, 21921.921921921923, 23523.523523523527, 25025.02502502503, 28228.22822822823, 29829.829829829832, 31331.331331331334, 32932.932932932934, 34434.434434434435, 36036.036036036036, 37537.53753753754, 39139.139139139144, 40740.740740740745, 42342.342342342345, 43843.843843843846, 46946.94694694695, 47747.74774774775, 48548.548548548555, 49349.34934934935, 50050.05005005006, 50850.85085085085, 51651.65165165166, 53253.25325325326, 56356.35635635636, 57957.95795795796, 59459.45945945946, 61061.06106106107, 62562.56256256257, 64164.16416416417, 65765.76576576577, 68868.86886886887, 71971.97197197197, 75075.07507507507, 76676.67667667668, 78278.27827827829, 79079.07907907908, 79879.87987987988, 80680.68068068069, 81381.38138138139, 82182.1821821822, 82982.98298298298, 84484.48448448449, 86086.0860860861, 87587.5875875876, 88388.3883883884, 88788.78878878879, 88988.98898898899, 89189.1891891892, 89589.5895895896, 89789.7897897898, 89989.98998998999, 90190.1901901902, 90390.3903903904, 90690.6906906907, 90890.89089089089, 91091.0910910911, 91491.4914914915, 92292.2922922923, 93793.7937937938, 100000.0];
+fy = [-7.00170692036934e-08, 1.0947698984041765e-07, 7.875501460248058e-07, 2.233225641141353e-06, 4.367748843994068e-06, 6.982827630431993e-06, 9.883968818968741e-06, 1.5993319418932447e-05, 2.1942528496166424e-05, 2.7364251973301945e-05, 3.2128566113229755e-05, 3.6216509175664014e-05, 3.966022097706759e-05, 4.251482104287394e-05, 4.484330961707371e-05, 4.6708800806492374e-05, 4.8170734661740725e-05, 4.9282533112208486e-05, 5.009365098256787e-05, 5.067629256107429e-05, 5.116587136598674e-05, 5.0977455222565017e-05, 5.033101037603566e-05, 4.940432804104205e-05, 4.4841847526280174e-05, 4.390070838596992e-05, 4.3267392246011555e-05, 4.306643318209113e-05, 4.332385382364866e-05, 4.3965082540462756e-05, 4.479142209702402e-05, 4.546798330093391e-05, 4.568981883260911e-05, 4.5345383510587105e-05, 4.4078525351016345e-05, 4.191109313518956e-05, 3.904687471932377e-05, 3.252140510902292e-05, 2.9513644896766766e-05, 2.753462220785759e-05, 2.530556930014244e-05, 2.3542659288529663e-05, 2.215642320691538e-05, 2.1011777367467665e-05, 1.9268586562917076e-05, 1.7879275582799446e-05, 1.6654970376875214e-05, 1.5539696647190365e-05, 1.3791048963842694e-05, 1.239297204631472e-05, 1.1484348391330815e-05, 1.0901119465855798e-05, 1.0654664030267313e-05, 1.0324907975428293e-05, 9.87725690344552e-06, 9.176337489298979e-06, 8.144915170642634e-06, 7.041514461643501e-06, 5.926420376977343e-06, 5.108488237536243e-06, 4.6378114381702e-06, 4.691422613398233e-06, 5.29975665888446e-06, 6.322827783867369e-06, 8.903601448247196e-06, 9.397491962230248e-06, 9.781534764117548e-06, 9.971335828620402e-06, 9.979494468344458e-06, 9.785421885967264e-06, 9.4282676909164e-06, 8.169227217014803e-06, 4.902913993394706e-06, 3.4422624814364983e-06, 2.4166576826473992e-06, 1.680272923194885e-06, 1.2598415127817301e-06, 9.999554742229113e-07, 8.470307578838619e-07, 7.029123589058478e-07, 6.060482084282032e-07, 5.992898877586231e-07, 9.86553056650152e-07, 1.8955671012470675e-06, 2.3440040388912675e-06, 2.5383376168642756e-06, 2.4066299507543764e-06, 2.0581729628358483e-06, 1.5536291746176355e-06, 1.0447784961565498e-06, 5.08037767359809e-07, 3.666041477246561e-07, 3.3687368072879814e-07, 3.320362668250251e-07, 5.162154736703169e-07, 8.405150275396369e-07, 1.3875312798730582e-06, 3.249784697355953e-06, 4.1231092405514735e-06, 4.47750237125129e-06, 4.180521324243001e-06, 3.359390077813789e-06, 1.8795783087788202e-06, 1.1286108548541142e-06, 6.425614522424119e-07, 3.097494475974095e-07, 2.829659551176327e-07, 2.6915233247840224e-07, 2.1763938469149517e-07];
+        
+// Brazil distribution
+y = [-1.6813396662,8.6305263223,18.9423923108,29.2542582993,39.5661242878,49.8779902763,60.1898562648,70.5017222533,80.8135882418,91.1254542303,101.437320219,111.749186207,122.061052196,132.372918184,142.684784173,152.996650161,163.30851615,183.932248127,194.244114115,204.555980104,214.867846092,225.179712081,235.491578069,245.803444058,256.115310046,266.427176035,287.050908012,297.362774,307.674639989,317.986505977,328.298371966,338.610237954,348.922103943,359.233969931,369.54583592,379.857701908,390.169567897,400.481433885,410.793299874,421.105165862,431.417031851,441.728897839,452.040763828,462.352629816,472.664495805,482.976361793,493.288227782,503.60009377,513.911959759,534.535691736,544.847557724,555.159423713,565.471289701,575.78315569,586.095021678,596.406887667,617.030619644,637.654351621,647.966217609,689.213681563,730.461145517,771.708609471,812.956073425,854.203537379,895.451001333,936.698465287,967.634063253,1008.88152721,1050.12899116,1132.62391907,1215.11884698,1287.3019089,1369.7968368,1452.29176471,1534.78669262,1617.28162053,1782.27147634,1936.94946617,2101.93932199,2256.61731182,2576.28515746,2906.26486909,3225.93271473,3545.60056038,3865.26840602,4514.9159633,5154.25165458,6443.23490315,7732.21815171,10299.8727828];
+fy = [0.000450002357484,0.000487579591566,0.000532378555959,0.000586576450658,0.000653201819358,0.000736492193682,0.000842268721108,0.000977937966425,0.00115062570676,0.00135933658806,0.00157655507581,0.00173830104363,0.001797011008,0.00178544683753,0.00177112645742,0.00176978149848,0.00177694926892,0.00179979494495,0.00180628563492,0.00180296489486,0.00178705289431,0.00175956128327,0.00172241601354,0.00167785017346,0.0016281088857,0.00157519490896,0.00146681988086,0.0014158917296,0.00137028886764,0.00133121445458,0.00129923832964,0.0012746797521,0.00125784745237,0.00124922312097,0.00124991963086,0.00127378083238,0.00136300455288,0.00165342157332,0.00179669746787,0.00116589503845,0.00102001707574,0.000970148224341,0.000957738970434,0.000959387405047,0.000956992059614,0.000939738666,0.000910564719579,0.000874297343027,0.000834768022754,0.000757758922758,0.000722950494581,0.000690812864112,0.000661667122327,0.000635385459191,0.000611758933422,0.000590261351676,0.000553963034419,0.00052524887081,0.000512780320943,0.000469121605249,0.000423789432533,0.000374827395581,0.000327586645033,0.000285858060752,0.000250775284603,0.000222060003424,0.000203896174495,0.000183483223659,0.000165836211316,0.000135839709887,0.000112149751241,9.59180250333e-05,8.15530913633e-05,7.06569982029e-05,6.22481711583e-05,5.53137178145e-05,4.42221424942e-05,3.62796526497e-05,2.99125755951e-05,2.55349368199e-05,1.84365242455e-05,1.25019864376e-05,9.18052755738e-06,7.149456123e-06,5.96164598972e-06,3.69669257866e-06,1.97765032094e-06,1.03561028908e-06,7.28539335048e-07,4.5012773534e-07];
+
+dist = new LinearSplinePDFIncomeDistribution(25e6, y, fy);
+
+//dist2 = new LogNormalIncomeDistribution(25e6, 563.573, 0.514789);
+// Ginis
+// Norway 0.25
+// UK 0.33
+// US 0.46
+// South Africa 0.63
+
+dist2 = new LogNormalIncomeDistribution(25e6, 563.573, 0.25);
+
+/******************************************************************************
+* PDF
+******************************************************************************/
+var svg = d3.select("svg#pdf"),
+    width = +svg.attr("width"),
+    height = +svg.attr("height"),
+    margin = {top: 20, right: 30, bottom: 30, left: 40};
+
+var x = d3.scaleLinear()
+    .domain([dist.inv(0.001),dist.inv(0.95)])
+    .range([margin.left, width - margin.right]);
+
+var grid = dist.grid(1000, false, x.domain());
+var grid2 = dist2.grid(1000, false, x.domain());
+
+var y = d3.scaleLinear()
+    .domain([0, Math.max(...grid.map(d => d.pdf))])
+    .range([height - margin.bottom, margin.top]);
+
+svg.append("g")
+    .attr("class", "axis axis--x")
+    .attr("transform", "translate(0," + (height - margin.bottom) + ")")
+    .call(d3.axisBottom(x));
+
+svg.append("g")
+    .attr("class", "axis axis--y")
+    .attr("transform", "translate(" + margin.left + ",0)")
+    .call(d3.axisLeft(y).ticks(null, ".1e"));
+
+ svg.append("path")
+      .datum(grid)
+      .attr("fill", "none")
+      .attr("stroke", "blue")
+      .attr("stroke-width", 1.5)
+      .attr("stroke-linejoin", "round")
+      .attr("d", d3.line()
+        //.curve(d3.curveCardinal)
+     .x(function(d) { return x(d.x); })
+        .y(function(d) { return y((d.pdf)); }));
+
+ svg.append("path")
+      .datum(grid2)
+      .attr("fill", "none")
+      .attr("stroke", "red")
+      .attr("stroke-width", 1.5)
+      .attr("stroke-linejoin", "round")
+      .attr("d", d3.line()
+        //.curve(d3.curveCardinal)
+     .x(function(d) { return x(d.x); })
+        .y(function(d) { return y((d.pdf)); }));
+        
+svg.append("text")
+        .attr("x", margin.left+(width-margin.left-margin.right)/2)             
+        .attr("y", margin.top * 2)
+        .attr("text-anchor", "middle")  
+        .style("font-size", "16px") 
+        .text("PDF");
+        
+/******************************************************************************
+* Histogram
+******************************************************************************/
+
+var x = d3.scaleLinear()
+    .domain([dist.inv(0.001),dist.inv(0.95)])
+    .range([margin.left, width - margin.right]);
+
+var hist = dist.histogram(50, true, x.domain());
+var hist2 = dist2.histogram(50, true, x.domain());
+
+var y = d3.scaleLinear()
+    .domain([0, Math.max(...hist.map(d => d.hist))])
+    .range([height - margin.bottom, margin.top]);
+
+var svg = d3.select("svg#histogram"),
+    width = +svg.attr("width"),
+    height = +svg.attr("height"),
+    margin = {top: 20, right: 30, bottom: 30, left: 40};
+
+svg.append("g")
+    .attr("class", "axis axis--x")
+    .attr("transform", "translate(0," + (height - margin.bottom) + ")")
+    .call(d3.axisBottom(x));
+
+svg.append("g")
+    .attr("class", "axis axis--y")
+    .attr("transform", "translate(" + margin.left + ",0)")
+    .call(d3.axisLeft(y).ticks(null, "s"));
+
+ svg.insert("g", "*")
+     .attr("fill", "blue")
+     .attr("opacity", 0.5)
+   .selectAll("rect")
+   .data(hist)
+   .enter().append("rect")
+     .attr("x", function(d) { return x(d.xmin) + 1; })
+     .attr("y", function(d) { return y(d.hist); })
+     .attr("width", function(d) { return x(d.xmax) - x(d.xmin) - 1; })
+     .attr("height", function(d) { return (y(0) - y(d.hist)); });
+
+ svg.insert("g", "*")
+     .attr("fill", "red")
+     .attr("opacity", 0.5)
+   .selectAll("rect")
+   .data(hist2)
+   .enter().append("rect")
+     .attr("x", function(d) { return x(d.xmin) + 1; })
+     .attr("y", function(d) { return y(d.hist); })
+     .attr("width", function(d) { return x(d.xmax) - x(d.xmin) - 1; })
+     .attr("height", function(d) { return (y(0) - y(d.hist)); });
+     
+svg.append("text")
+        .attr("x", margin.left+(width-margin.left-margin.right)/2)             
+        .attr("y", margin.top * 2)
+        .attr("text-anchor", "middle")  
+        .style("font-size", "16px") 
+        .text("Histogram");
+
+ /******************************************************************************
+ * CDF
+ ******************************************************************************/
+ var svg = d3.select("svg#cdf"),
+     width = +svg.attr("width"),
+     height = +svg.attr("height"),
+     margin = {top: 20, right: 30, bottom: 30, left: 40};
+
+ var x = d3.scaleLinear()
+     .domain([dist.inv(0.001),dist.inv(0.95)])
+     .range([margin.left, width - margin.right]);
+
+ var grid = dist.grid(1000, false, x.domain());
+ var grid2 = dist2.grid(1000, false, x.domain());
+
+ var y = d3.scaleLinear()
+     .domain([0, 1])
+     .range([height - margin.bottom, margin.top]);
+
+ svg.append("g")
+     .attr("class", "axis axis--x")
+     .attr("transform", "translate(0," + (height - margin.bottom) + ")")
+     .call(d3.axisBottom(x));
+
+ svg.append("g")
+     .attr("class", "axis axis--y")
+     .attr("transform", "translate(" + margin.left + ",0)")
+     .call(d3.axisLeft(y));
+
+  svg.append("path")
+       .datum(grid)
+       .attr("fill", "none")
+       .attr("stroke", "blue")
+       .attr("stroke-width", 1.5)
+       .attr("stroke-linejoin", "round")
+       .attr("d", d3.line()
+         //.curve(d3.curveCardinal)
+      .x(function(d) { return x(d.x); })
+         .y(function(d) { return y((d.cdf)); }));
+
+  svg.append("path")
+       .datum(grid2)
+       .attr("fill", "none")
+       .attr("stroke", "red")
+       .attr("stroke-width", 1.5)
+       .attr("stroke-linejoin", "round")
+       .attr("d", d3.line()
+         //.curve(d3.curveCardinal)
+      .x(function(d) { return x(d.x); })
+         .y(function(d) { return y((d.cdf)); }));
+       
+ svg.append("text")
+        .attr("x", margin.left+(width-margin.left-margin.right)/2)             
+        .attr("y", margin.top * 2)
+        .attr("text-anchor", "middle")  
+        .style("font-size", "16px") 
+         .text("CDF");
+
+       
+ /******************************************************************************
+ * Quantile
+ ******************************************************************************/
+var svg = d3.select("svg#quantile"),
+ width = +svg.attr("width"),
+ height = +svg.attr("height"),
+ margin = {top: 20, right: 30, bottom: 30, left: 40};
+
+var x = d3.scaleLinear()
+ .domain([0, 1])
+ .range([margin.left, width - margin.right]);
+ 
+var xgrid = [];
+for (var i = 0; i < 1; i += 1/1000) {
+    xgrid.push(i);
+}
+
+var grid = d3.transpose([xgrid, dist.inv(xgrid)]);
+var grid2 = d3.transpose([xgrid, dist2.inv(xgrid)]);
+
+var y = d3.scaleLinear()
+ .domain([0, dist.inv(0.999)])
+ .range([height - margin.bottom, margin.top]);
+
+svg.append("g")
+ .attr("class", "axis axis--x")
+ .attr("transform", "translate(0," + (height - margin.bottom) + ")")
+ .call(d3.axisBottom(x));
+
+svg.append("g")
+ .attr("class", "axis axis--y")
+ .attr("transform", "translate(" + margin.left + ",0)")
+ .call(d3.axisLeft(y));
+
+svg.append("path")
+   .datum(grid)
+   .attr("fill", "none")
+   .attr("stroke", "blue")
+   .attr("stroke-width", 1.5)
+   .attr("stroke-linejoin", "round")
+   .attr("d", d3.line()
+     //.curve(d3.curveCardinal)
+  .x(function(d) { return x(d[0]); })
+     .y(function(d) { return y((d[1])); }));
+     
+svg.append("path")
+   .datum(grid2)
+   .attr("fill", "none")
+   .attr("stroke", "red")
+   .attr("stroke-width", 1.5)
+   .attr("stroke-linejoin", "round")
+   .attr("d", d3.line()
+     
+     //.curve(d3.curveCardinal)
+  .x(function(d) { return x(d[0]); })
+     .y(function(d) { return y((d[1])); }));
+svg.append("text")
+        .attr("x", margin.left+(width-margin.left-margin.right)/2)             
+        .attr("y", margin.top * 2)
+        .attr("text-anchor", "middle")  
+        .style("font-size", "16px") 
+        .text("Quantile function");
+
+ /******************************************************************************
+ * Lorenz
+ ******************************************************************************/
+var svg = d3.select("svg#lorenz"),
+ width = +svg.attr("width"),
+ height = +svg.attr("height"),
+ margin = {top: 20, right: 30, bottom: 30, left: 40};
+
+var x = d3.scaleLinear()
+ .domain([0, 1])
+ .range([margin.left, width - margin.right]);
+
+var xgrid = [];
+for (var i = 0; i < 1; i += 1/1000) {
+    xgrid.push(i);
+}
+
+var grid = d3.transpose([xgrid, dist.lorenz(xgrid)]);
+var grid2 = d3.transpose([xgrid, dist2.lorenz(xgrid)]);
+
+var y = d3.scaleLinear()
+ .domain([0, Math.max(...grid.map(d => d[1]))])
+ .range([height - margin.bottom, margin.top]);
+
+svg.append("g")
+ .attr("class", "axis axis--x")
+ .attr("transform", "translate(0," + (height - margin.bottom) + ")")
+ .call(d3.axisBottom(x));
+
+svg.append("g")
+ .attr("class", "axis axis--y")
+ .attr("transform", "translate(" + margin.left + ",0)")
+ .call(d3.axisLeft(y));
+
+svg.append("path")
+   .datum(grid)
+   .attr("fill", "none")
+   .attr("stroke", "blue")
+   .attr("stroke-width", 1.5)
+   .attr("stroke-linejoin", "round")
+   .attr("d", d3.line()
+     //.curve(d3.curveCardinal)
+  .x(function(d) { return x(d[0]); })
+     .y(function(d) { return y((d[1])); }));
+     
+svg.append("path")
+   .datum(grid2)
+   .attr("fill", "none")
+   .attr("stroke", "red")
+   .attr("stroke-width", 1.5)
+   .attr("stroke-linejoin", "round")
+   .attr("d", d3.line()
+     //.curve(d3.curveCardinal)
+  .x(function(d) { return x(d[0]); })
+     .y(function(d) { return y((d[1])); }));
+
+svg.append("text")
+        .attr("x", margin.left+(width-margin.left-margin.right)/2)             
+        .attr("y", margin.top * 2)
+        .attr("text-anchor", "middle")  
+        .style("font-size", "16px") 
+        .text("Lorenz curve (not normalized to mean)");
+
+ /******************************************************************************
+ * Deciles
+ ******************************************************************************/
+     
+ var domain = ["bottom 10%", "10-20%","20-30%","30-40%","40-50%","50-60%","60-70%","70-80%","80-90%","top 10%"];
+
+ var deciles = d3.transpose([
+     domain, 
+     dist.deciles()
+ ]);
+
+ var deciles2 = d3.transpose([
+     domain, 
+     dist2.deciles()
+ ]);
+
+ var svg = d3.select("svg#deciles"),
+     width = +svg.attr("width"),
+     height = +svg.attr("height"),
+     margin = {top: 20, right: 30, bottom: 70, left: 40};
+
+ var x = d3.scaleBand()
+     .domain(domain)
+     .rangeRound([margin.left, width - margin.right])
+     .padding(0.1);
+
+ var y = d3.scaleLinear()
+     .domain([0, Math.max(...deciles.map(d => d[1]))])
+     .range([height - margin.bottom, margin.top]);
+
+
+ svg.append("g")
+     .attr("class", "axis axis--x")
+     .attr("transform", "translate(0," + (height - margin.bottom) + ")")
+     .call(d3.axisBottom(x))
+     .selectAll("text")
+     .attr("y", 0)
+     .attr("x", 9)
+     .attr("dy", ".35em")
+     .attr("transform", "rotate(90)")
+     .style("text-anchor", "start");
+     
+ svg.append("g")
+     .attr("class", "axis axis--y")
+     .attr("transform", "translate(" + margin.left + ",0)")
+     .call(d3.axisLeft(y).ticks(null, "s"));
+
+  svg.insert("g", "*")
+      .attr("fill", "blue")
+     .attr("opacity", 0.5)
+    .selectAll("rect")
+    .data(deciles)
+    .enter().append("rect")
+      .attr("x", function(d) { return x(d[0]); })
+      .attr("y", function(d) { return y(d[1]); })
+     .attr("width", x.bandwidth())
+      .attr("height", function(d) { return (y(0) - y(d[1])); });
+
+  svg.insert("g", "*")
+      .attr("fill", "red")
+     .attr("opacity", 0.5)
+    .selectAll("rect")
+    .data(deciles2)
+    .enter().append("rect")
+      .attr("x", function(d) { return x(d[0]); })
+      .attr("y", function(d) { return y(d[1]); })
+     .attr("width", x.bandwidth())
+      .attr("height", function(d) { return (y(0) - y(d[1])); });
+
+svg.append("text")
+        .attr("x", margin.left+(width-margin.left-margin.right)/2)             
+        .attr("y", margin.top * 2)
+        .attr("text-anchor", "middle")  
+        .style("font-size", "16px") 
+        .text("Mean by deciles");
+
+</script>

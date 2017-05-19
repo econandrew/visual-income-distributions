@@ -1,9 +1,14 @@
 <!DOCTYPE html>
-<body>
+<script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
 <p>Key
     <ul>
         <li>Blue = Brazil, 2014</li>
         <li>Red = Brazil, 2014 same mean with Norwegian inequality (G = ~0.25)</li>
+    </ul>
+    <form>
+        <label for="gini">Gini:</label>
+        <input type="range" name="gini" id="gini" value="25" min="0" max="100">
+    </form>
 </p>
 <svg id="pdf" width="400" height="400"></svg>
 <svg id="histogram" width="400" height="400"></svg>
@@ -46,6 +51,7 @@ var svg = d3.select("svg#pdf"),
     margin = {top: 20, right: 30, bottom: 30, left: 40};
 
 var x = d3.scaleLinear()
+//var x = d3.scaleLog().base(10)
     .domain([dist.inv(0.001),dist.inv(0.95)])
     .range([margin.left, width - margin.right]);
 
@@ -95,65 +101,6 @@ svg.append("text")
         .style("font-size", "16px") 
         .text("PDF");
         
-/******************************************************************************
-* Histogram
-******************************************************************************/
-
-var x = d3.scaleLinear()
-    .domain([dist.inv(0.001),dist.inv(0.95)])
-    .range([margin.left, width - margin.right]);
-
-var hist = dist.histogram(50, true, x.domain());
-var hist2 = dist2.histogram(50, true, x.domain());
-
-var y = d3.scaleLinear()
-    .domain([0, Math.max(...hist.map(d => d.hist))])
-    .range([height - margin.bottom, margin.top]);
-
-var svg = d3.select("svg#histogram"),
-    width = +svg.attr("width"),
-    height = +svg.attr("height"),
-    margin = {top: 20, right: 30, bottom: 30, left: 40};
-
-svg.append("g")
-    .attr("class", "axis axis--x")
-    .attr("transform", "translate(0," + (height - margin.bottom) + ")")
-    .call(d3.axisBottom(x));
-
-svg.append("g")
-    .attr("class", "axis axis--y")
-    .attr("transform", "translate(" + margin.left + ",0)")
-    .call(d3.axisLeft(y).ticks(null, "s"));
-
- svg.insert("g", "*")
-     .attr("fill", "blue")
-     .attr("opacity", 0.5)
-   .selectAll("rect")
-   .data(hist)
-   .enter().append("rect")
-     .attr("x", function(d) { return x(d.xmin) + 1; })
-     .attr("y", function(d) { return y(d.hist); })
-     .attr("width", function(d) { return x(d.xmax) - x(d.xmin) - 1; })
-     .attr("height", function(d) { return (y(0) - y(d.hist)); });
-
- svg.insert("g", "*")
-     .attr("fill", "red")
-     .attr("opacity", 0.5)
-   .selectAll("rect")
-   .data(hist2)
-   .enter().append("rect")
-     .attr("x", function(d) { return x(d.xmin) + 1; })
-     .attr("y", function(d) { return y(d.hist); })
-     .attr("width", function(d) { return x(d.xmax) - x(d.xmin) - 1; })
-     .attr("height", function(d) { return (y(0) - y(d.hist)); });
-     
-svg.append("text")
-        .attr("x", margin.left+(width-margin.left-margin.right)/2)             
-        .attr("y", margin.top * 2)
-        .attr("text-anchor", "middle")  
-        .style("font-size", "16px") 
-        .text("Histogram");
-
  /******************************************************************************
  * CDF
  ******************************************************************************/
@@ -414,5 +361,81 @@ svg.append("text")
         .attr("text-anchor", "middle")  
         .style("font-size", "16px") 
         .text("Mean by deciles");
+        
+    /******************************************************************************
+    * Histogram
+    ******************************************************************************/
+
+    var x = d3.scaleLinear()
+        .domain([dist.inv(0.001),dist.inv(0.95)])
+        .range([margin.left, width - margin.right]);
+
+    var hist = dist.histogram(50, true, x.domain());
+    var hist2 = dist2.histogram(50, true, x.domain());
+
+    var y = d3.scaleLinear()
+        .domain([0, Math.max(...hist.map(d => d.hist))])
+        .range([height - margin.bottom, margin.top]);
+
+    var svg = d3.select("svg#histogram"),
+        width = +svg.attr("width"),
+        height = +svg.attr("height"),
+        margin = {top: 20, right: 30, bottom: 30, left: 40};
+
+    svg.append("g")
+        .attr("class", "axis axis--x")
+        .attr("transform", "translate(0," + (height - margin.bottom) + ")")
+        .call(d3.axisBottom(x));
+
+    svg.append("g")
+        .attr("class", "axis axis--y")
+        .attr("transform", "translate(" + margin.left + ",0)")
+        .call(d3.axisLeft(y).ticks(null, "s"));
+
+     svg.insert("g", "*")
+         .attr("fill", "blue")
+         .attr("opacity", 0.5)
+       .selectAll("rect")
+       .data(hist)
+       .enter().append("rect")
+         .attr("x", function(d) { return x(d.xmin) + 1; })
+         .attr("y", function(d) { return y(d.hist); })
+         .attr("width", function(d) { return x(d.xmax) - x(d.xmin) - 1; })
+         .attr("height", function(d) { return (y(0) - y(d.hist)); });
+
+     svg.insert("g", "*")
+         .attr("fill", "red")
+         .attr("opacity", 0.5)
+       .selectAll("rect")
+       .data(hist2)
+       .enter().append("rect")
+         .attr("class", "d2r")
+         .attr("x", function(d) { return x(d.xmin) + 1; })
+         .attr("y", function(d) { return y(d.hist); })
+         .attr("width", function(d) { return x(d.xmax) - x(d.xmin) - 1; })
+         .attr("height", function(d) { return (y(0) - y(d.hist)); });
+     
+    svg.append("text")
+            .attr("x", margin.left+(width-margin.left-margin.right)/2)             
+            .attr("y", margin.top * 2)
+            .attr("text-anchor", "middle")  
+            .style("font-size", "16px") 
+            .text("Histogram");
+
+$('#gini').on('input',function() {
+    gini = $(this).val() ;
+
+    dist2 = new LogNormalIncomeDistribution(25e6, 563.573, gini/100);
+
+    var hist2 = dist2.histogram(50, true, x.domain());
+    var svg = d3.select("svg#histogram");
+    svg.selectAll("rect.d2r")
+        .data(hist2)
+        .transition(d3.transition().duration(50))
+        .attr("y", function(d) { return y(d.hist); })
+        .attr("height", function(d) { return (y(0) - y(d.hist)); });
+ 
+     //rects.exit().remove();
+ });
 
 </script>

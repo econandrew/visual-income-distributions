@@ -47,9 +47,11 @@
         grid(points, popn, limits) {
             var grid = [];
             
+            if (limits == undefined) limits = [0,this.inv(0.99)];
+            
             var [lower, upper] = limits;
             var step = (upper - lower) / (points - 1);
-            for (var x = lower; x < upper; x += step) {
+            for (var x = lower; x <= upper; x += step) {
                 grid.push({
                     x: x,
                     pdf: this.pdf(x, popn),
@@ -99,6 +101,10 @@
                 out.push((L[i]-L[i-1])/(p[i]-p[i-1]));
             }
             return out;
+        }
+        
+        median() {
+            return this.inv(0.5);
         }
     }
     
@@ -151,6 +157,35 @@
             this.x = x;
             this.fx = fx;
             this.Fx = integrate(fx, x);
+            this.last_x_index = 1;
+        }
+        
+        static convex_combination(a, b, p, population) {
+            // assumes es6 sets preserve order, which is apparently true
+            var x = [...new Set([...a.x, ...b.x])];
+            var fx = v_add(v_scale(a.pdf(x), 1-p), v_scale(b.pdf(x), p));
+            population = population | a.population * (1-p) + b.population * p;
+            return new LinearSplinePDFIncomeDistribution(population, x, fx);
+        }
+        
+        static aggregate(dists, points) {
+            points = points || 500;
+            
+            var lower = 0;
+            var upper = Math.max(...dists.map(d => d.x[d.x.length-1]))
+            
+            var x = [];
+            var fx = [];
+            var step = (upper - lower) / (points - 1);
+            for (var ix = lower; ix <= upper; ix += step) {
+                x.push(ix);
+                fx.push(dists.map(d => d.pdf_scalar(ix, true) * d.population).reduce((a, b) => a + b));
+            }
+    
+            var population = dists.map(d => d.population).reduce((a, b) => a + b);
+            fx = v_scale(fx, 1/population)
+            
+            return new LinearSplinePDFIncomeDistribution(population, x, fx);
         }
         
         pdf_scalar(x) {
@@ -160,6 +195,10 @@
                 }
             }
             return 0;
+        }
+        
+        pdf_max(popn) {
+            return Math.max(...this.fx) * (popn ? this.population : 1);            
         }
         
         cdf_scalar(x) {
@@ -188,9 +227,11 @@
             for (var i = 1; this.Fx[i-1] <= p && i < this.x.length; i++) {
                 var pstar = Math.min(p, this.Fx[i]);
                 var k0 = (this.fx[i] - this.fx[i-1]) / (this.x[i] - this.x[i-1]);
-                var c = (pstar - this.Fx[i-1])*(this.x[i-1] - this.fx[i-1]/k0);
-                var d = ((this.fx[i-1]**2 + 2*k0*(pstar - this.Fx[i-1]))**(3/2) - this.fx[i-1]**3) / (3 * k0**2);
-                integral = integral + c + d;
+                if(k0 !== 0.0) {
+                    var c = (pstar - this.Fx[i-1])*(this.x[i-1] - this.fx[i-1]/k0);
+                    var d = ((this.fx[i-1]**2 + 2*k0*(pstar - this.Fx[i-1]))**(3/2) - this.fx[i-1]**3) / (3 * k0**2);
+                    integral = integral + c + d;
+                }
                 //console.log(i, k0, c, d, integral);
             }
             return integral;

@@ -334,7 +334,7 @@
             d3.csv("population_urban.csv", function(populationsUrban) {
                 d3.csv("population_rural.csv", function(populationsRural) {
                     d3.csv("fce.csv", function(fce) {
-                        d3.csv("../gdp.csv", function(gdp) {
+                        d3.csv("gdp.csv", function(gdp) {
                             var model = new AllDistributions(
                                 distributions,
                                 populations, populationsUrban, populationsRural,

@@ -103,7 +103,9 @@
                     </div>
                   </v-tabs-content>
                   <v-tabs-content id="tab-lorenz">
-                      Lorenz
+                    <div v-if="this.currentTab == 'tab-lorenz'" width="100%" min-height="400px">
+                      <lorenz-chart v-if="series" v-bind:series="series" v-bind:year="year" v-bind:is-log="logscale"></pdf-chart>
+                    </div>
                   </v-tabs-content>
                   <v-tabs-content id="tab-deciles">
                     <div v-if="this.currentTab == 'tab-deciles'" width="100%" min-height="400px">

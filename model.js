@@ -256,7 +256,7 @@ class Series {
         }
         console.log("Creating color scale with" + this.names);
         this.colorScale = d3.scaleOrdinal().range(colors250).domain(this.names);
-        this.color = this.series.length > 0 ? "#999999" : this.colorScale(this.names[0]);
+        this.color = this.series.length > 1 ? "#000000" : this.colorScale(this.names[0]);
     }
     
     minYear() {

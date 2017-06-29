@@ -381,6 +381,138 @@ Vue.component('histogram-chart', {
     }
 });
 
+Vue.component('lorenz-chart', {
+    props: ['series', 'year'],
+    template: '<svg width="800px" height="450px"></svg>',
+    watch: {
+        series: function (newSeries) {
+            this.drawChart(newSeries, this.year);
+        },
+        year: function (newYear) {
+          this.drawChart(this.series, newYear, fast = this.fastDrawing);
+          if (this.delayedDrawTimer !== undefined)
+            this.delayedDrawTimer = clearTimeout(this.delayedDrawTimer);
+          if (this.fastDrawing) {
+            this.delayedDrawTimer = setTimeout(() => {
+                this.drawChart(this.series, newYear, fast = false);
+            }, 500);
+          }
+        },
+    },
+    mounted: function () {
+        this.fastDrawing = false;
+      
+        var svg = d3.select(this.$el);
+        var width = parseInt(svg.style("width"), 10);
+        var height = parseInt(svg.style("height"), 10);
+
+        var margin = { top:20, left:45, bottom:30, right:0 };
+        var chartWidth = width - (margin.left + margin.right);
+        var chartHeight = height - (margin.top + margin.bottom);
+        
+        this.chartLayer = svg
+            .append('g')
+            .attr(
+              "transform",
+              `translate(${margin.left}, ${margin.top})`
+            );
+
+        this.chartLayer.append("g").attr("class", "x axis");
+        this.chartLayer.append("g").attr("class", "y axis");
+        this.chartLayer.append("g").attr("class", "refline");
+
+        // create any reuseable parts
+        this.xScale = d3.scaleLinear().range([0, 1]);
+        this.yScale = d3.scaleLinear().range([0, 1]);
+
+        this.xAxis = d3.axisBottom(this.xScale).ticks(10, "s").tickFormat(d3.format(".1f"));
+        this.yAxis = d3.axisLeft(this.yScale).ticks(10, "s").tickFormat(d3.format(".1f"));
+
+        this.line = d3.line().x(d => this.xScale(d.p)).y(d => this.yScale(d.L));
+
+        this.xScale.range([0, chartWidth]);
+        this.yScale.range([chartHeight, 0]);
+
+        this.updateScales(this.series);
+        this.drawChart(this.series, this.year);
+    },
+    methods: {
+        updateScales: function(series) {
+            this.chartLayer.selectAll(".refline").append("line")
+              .attr("x1",this.xScale(0))
+              .attr("y1",this.yScale(0))
+              .attr("x2",this.xScale(1))
+              .attr("y2",this.yScale(1))
+              .attr("stroke-width","4")
+              .attr("stroke-dasharray", "10,10")
+              .attr("stroke", "silver");
+
+            this.chartLayer.select(".x.axis")
+                .attr("transform", "translate(0," + this.yScale.range()[0] + ")")
+                .call(this.xAxis);
+
+            this.chartLayer.select(".y.axis").call(this.yAxis);
+        },
+        drawChart: function (series, year, fast = false) {
+          var t0 = performance.now();
+
+          if (series.series.length > 1) {
+            var data = series.series.map((years, i) => {
+              var d = years.get(year).grid_lorenz(fast ? 20: 100);
+              d.key = series.names[i];
+              return d;
+            });
+          } else {
+            var data = [];
+          }
+            
+            var aggdata = series.aggregate.get(year).grid_lorenz(fast ? 20: 100);
+                        
+            var layerAggregate = this.chartLayer.selectAll(".layeraggregate").data([aggdata]);
+
+            layerAggregate.enter().append("g")
+                .attr("class", "layeraggregate") 
+                .append("path")
+                .attr("class", "line")
+                .attr("stroke-width","4")
+                .attr("stroke", d => series.color)
+                .attr("fill", "none")
+                .attr("d", this.line);                
+                      
+            layerAggregate.select(".line")
+                .attr("stroke", d => series.color) // TODO this shouldn't need updating every time if we don't recolor
+                .attr("d", this.line);
+
+            var layer = this.chartLayer.selectAll(".layer")
+                .data(data, d => d.key);
+            
+            layer.enter().append("g")
+                .attr("class", "layer") 
+                .append("path")
+                .attr("class", "line")
+                .attr("stroke-width","2")
+                .attr("stroke", d => series.colorScale(d.key))
+                .attr("fill", "none")
+                .attr("d", this.line);                
+                          
+            layer.select(".line")
+                .attr("stroke", d => series.colorScale(d.key)) // TODO this shouldn't need updating every time if we don't recolor
+                .attr("d", this.line);
+                
+            layer.exit().remove();
+
+            var t1 = performance.now();
+            if (!fast) {
+              if (t1 - t0 > 200) {
+                this.fastDrawing = true;
+              } else {
+                this.fastDrawing = false;
+              }
+            }
+        }
+    }
+});
+
 Vue.component('deciles-chart', {
     props: ['series', 'year'],
     template: '<svg width="800px" height="450px"></svg>',

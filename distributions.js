@@ -43,6 +43,20 @@ class IncomeDistribution {
             return this.lorenz_scalar(p);
         }
     }
+    
+    grid_lorenz(points) {
+      var grid = [];
+      var [lower, upper] = [0, 1];
+      var step = (upper - lower) / (points - 1);
+      for (var p = lower; p <= upper; p += step) {
+          grid.push({
+            p: p,
+            L: this.lorenz_scalar(p)
+          });
+      }
+      
+      return grid;      
+    }
 
     grid(points, popn, limits) {
         var grid = [];
@@ -142,10 +156,13 @@ class IncomeDistribution {
     }
     
     mean() {
+      if (this.cachedMean === undefined) {
         const p = v_grid(0, 1, 1000);
         const x = this.inv(p);
         const integral = integrate(x, p);
-        return integral[integral.length-1];
+        this.cachedMean = integral[integral.length-1];
+      }
+      return this.cachedMean;
     }
     
     gini() {

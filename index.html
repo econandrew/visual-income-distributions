@@ -1,614 +1,379 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
-    <script src="https://d3js.org/d3.v4.min.js"></script>
-    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
-    <script src="https://cdn.jsdelivr.net/jstat/latest/jstat.min.js"></script>
-    <script src="https://unpkg.com/vue"></script>
-    <script src="distributions.js"></script>
-    <script src="charts.js"></script>
-    <link rel="stylesheet" type="text/css" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Income Distributions</title>
+  <link href='https://fonts.googleapis.com/css?family=Roboto:300,400,500,700|Material+Icons' rel="stylesheet" type="text/css">
+  <link href="https://unpkg.com/vuetify/dist/vuetify.min.css" rel="stylesheet" type="text/css"></link>
+  <link href="styles.css" rel="stylesheet" type="text/css">
+  <link rel="icon" type="image/png" href="favicon-32x32.png" sizes="32x32">
+  <style>
+    .input-group__selections {
+      overflow: scroll;
+      max-height: 100px;
+    } 
+    [v-cloak] {
+      display: none;
+    }
+  </style>
+  <script src="https://d3js.org/d3.v4.js"></script>
+  <script src="https://unpkg.com/vue/dist/vue.js"></script>
+  <script src="https://unpkg.com/vuetify/dist/vuetify.js"></script>
+  <script src="../distributions.js"></script>
+  <script src="../model.js"></script>
+  <script src="../charts.js"></script>
 </head>
 <body>
-    <div id="app">{{message}}</div>
+  <div id="app" v-cloak>
+    <v-app>
+      
+      <main>
+        <v-container fluid>
+          <v-card class="grey lighten-4 elevation-0">
+            <v-card-text>
+              <v-layout row wrap>
+                <v-flex xs12 sm12>
+                  <v-select
+                    label="Click here to select countries"
+                    v-bind:items="availableCountries"
+                    v-model="selected"
+                    item-text="name"
+                    item-value="code"
+                    item-group="group"
+                    multiple
+                    chips
+                    autocomplete
+                  >
+                    <template slot="selection" scope="data">
+                      <v-chip
+                        close
+                        @input="data.parent.selectItem(data.item)"
+                        @click.native.stop
+                        class="chip--select-multi"
+                        :key="data.item"
+                        v-bind:style="'color: '+textColorBW(series.colorScale(data.item.code))+'; background-color: '+series.colorScale(data.item.code)"
+                      >
+                        {{ data.item.name }}
+                      </v-chip>
+                    </template>
+                  </v-select>
+                </v-flex>
+                <v-flex xs6 sm6>
+                  <v-btn primary light @click.native="selectAll">Select all</v-btn>
+                  <v-btn primary light @click.native="selectNone">Clear all</v-btn>                  
+                </v-flex>
+                <v-flex xs6 sm6 class="text-xs-right">
+                  <v-btn primary light @click.native="sortByPopulation">Sort by population</v-btn>
+                  <v-btn dark disabled>Sort by region</v-btn>                  
+                </v-flex>
+              </v-layout>
+            </v-card-text>
+          </v-card>
+          <br>
+            <v-layout row wrap v-if="series">
+              <v-flex xs12 v-if="series">
+                <v-slider v-model="year" thumb-label v-bind:min="series.minYear()" v-bind:max="series.maxYear()" step="1" v-bind:label="'Year '+year" @keyup.left="decrementYear" @keyup.right="incrementYear"></v-slider>
+              </v-flex>
+              <v-flex xs7>
+                <v-tabs grow centered light v-model="currentTab">
+                  <v-tabs-bar slot="activators">
+                    <v-tabs-slider></v-tabs-slider>
+                    <v-tabs-item href="#tab-pdf" ripple>PDF</v-tabs-item>
+                    <v-tabs-item href="#tab-cdf" ripple>CDF</v-tabs-item>
+                    <v-tabs-item href="#tab-histogram" ripple>Histogram</v-tabs-item>
+                    <v-tabs-item href="#tab-lorenz" ripple>Lorenz</v-tabs-item>
+                    <v-tabs-item href="#tab-deciles" ripple>Deciles</v-tabs-item>
+                    <v-toolbar-side-icon class="mr-4" light @click.native.stop="drawer = !drawer"></v-toolbar-side-icon>
+                  </v-tabs-bar>
+                  <v-tabs-content id="tab-pdf">
+                    <div v-if="this.currentTab == 'tab-pdf'" width="100%" min-height="400px">
+                      <pdf-chart v-if="series" v-bind:series="series" v-bind:year="year" v-bind:is-log="logscale"></pdf-chart>
+                    </div>
+                  </v-tabs-content>
+                  <v-tabs-content id="tab-cdf">
+                    <div v-if="this.currentTab == 'tab-cdf'" width="100%" min-height="400px">
+                      <cdf-chart v-if="series" v-bind:series="series" v-bind:year="year" v-bind:is-log="logscale"></pdf-chart>
+                    </div>
+                  </v-tabs-content>
+                  <v-tabs-content id="tab-histogram">
+                    <div v-if="this.currentTab == 'tab-histogram'" width="100%" min-height="400px">
+                      <histogram-chart v-if="series" v-bind:series="series" v-bind:year="year" v-bind:is-log="logscale"></pdf-chart>
+                    </div>
+                  </v-tabs-content>
+                  <v-tabs-content id="tab-lorenz">
+                      Lorenz
+                  </v-tabs-content>
+                  <v-tabs-content id="tab-deciles">
+                    <div v-if="this.currentTab == 'tab-deciles'" width="100%" min-height="400px">
+                      <deciles-chart v-if="series" v-bind:series="series" v-bind:year="year"></pdf-chart>
+                    </div>
+                  </v-tabs-content>
+                </v-tabs>
+              </v-flex>
+              <v-flex xs5>
+                <v-container fluid>
+                  <v-layout row>
+                    <v-flex xs6>
+                      <v-subheader>Population (% of world)</v-subheader>
+                    </v-flex>
+                    <v-flex xs6>
+                      <v-text-field
+                        v-bind:label="series ? $options.filters.human(series.aggregate.get(year).population) + ' (' + $options.filters.percentage(series.aggregate.get(year).population / core.model.populations.national.get('WLD').get(year)) + ')' : ''"
+                        single-line
+                      ></v-text-field>
+                    </v-flex>
+                  </v-layout>
+                  <v-layout row>
+                    <v-flex xs6>
+                      <v-subheader>Poverty line</v-subheader>
+                    </v-flex>
+                    <v-flex xs6>
+                      <v-text-field
+                        v-model="povertyLine"
+                        prefix="$PPP"
+                        suffix="/ month"
+                        single-line
+                      ></v-text-field>
+                    </v-flex>
+                  </v-layout>
+                  <v-layout row>
+                    <v-flex xs6>
+                      <v-subheader>Poverty headcount (% of population)</v-subheader>
+                    </v-flex>
+                    <v-flex xs6>
+                      <v-text-field
+                        v-bind:label="series ? ($options.filters.human(series.aggregate.get(year).cdf(povertyLine, true)) + ' ('+  $options.filters.percentage(series.aggregate.get(year).cdf(povertyLine)) + ')') : ''"
+                        single-line
+                        disabled
+                      ></v-text-field>
+                    </v-flex>
+                  </v-layout>
+                  <v-layout row>
+                    <v-flex xs6>
+                      <v-subheader>Median</v-subheader>
+                    </v-flex>
+                    <v-flex xs6>
+                      <v-text-field
+                        v-bind:label="series ? series.aggregate.get(year).median() : '' | currency('$PPP',0)"
+                        suffix="/ month"
+                        single-line
+                        disabled
+                      ></v-text-field>
+                    </v-flex>
+                  </v-layout>
+                  <v-layout row>
+                    <v-flex xs6>
+                      <v-subheader>Mean</v-subheader>
+                    </v-flex>
+                    <v-flex xs6>
+                      <v-text-field
+                        v-bind:label="series ? series.aggregate.get(year).mean() : '' | currency('$PPP',0)"
+                        suffix="/ month"
+                        single-line
+                        disabled
+                      ></v-text-field>
+                    </v-flex>
+                  </v-layout>
+                  <v-layout row>
+                    <v-flex xs6>
+                      <v-subheader>Gini</v-subheader>
+                    </v-flex>
+                    <v-flex xs6>
+                      <v-text-field
+                        v-bind:label="series ? series.aggregate.get(year).gini() : '' | fixed(2)"
+                        single-line
+                        disabled
+                      ></v-text-field>
+                    </v-flex>
+                  </v-layout>
+                  <v-layout row>
+                    <v-flex xs6>
+                      <v-subheader>Income axis</v-subheader>
+                    </v-flex>
+                    <v-flex xs6>
+                      <v-switch label="Log scale" v-model="logscale"></v-switch>
+                    </v-flex>
+                  </v-layout>
+                </v-container>
+              </v-flex>
+            </v-layout>
+        </v-container>
+      </main>
+      
+      <v-footer>
+        <span>A research project by the World Bank Development Data Group. <strong>Results are experimental only and should not be considered official.</strong></span>
+      </v-footer>
+    </v-app>
+  </div>
+
+  <script>
+    var app = new Vue({
+      el: '#app',
+      data: {
+        currentTab: "tab-pdf",
+        selected: [],
+        year: 2000,
+        povertyLine: 57.7917,
+        core: {
+          model: null
+        },
+        logscale: false
+      },
+      created: function() {
+        window.addEventListener('keyup', this.keyup);
+      },
+      computed: {
+        availableCountries: function() {
+          if (this.core.model !== null) {
+            var avail = Array.from(this.core.model.distributions.keys()).map(n => ({code: n, name: this.core.model.countries.get(n)}));
+            avail.sort((a, b) => (a.name < b.name) ? -1 : ((a.name > b.name) ? 1 : 0));
+            return avail;
+          } else {
+            return [];
+          }
+        },
+        series: function () {
+            if (this.core.model !== null && this.selected.length > 0) {
+                return new Series(
+                    this.selected,
+                    this.selected.map(code => {
+                        if (this.core.model.distributions.get(code).national.consumption.size != 0)
+                            return this.core.model.distributions.get(code).national.consumption;
+                        else
+                            return this.core.model.distributions.get(code).national.income;
+                    })
+                );
+            } else {
+                return null;
+            }
+        },
+      },
+      methods: {
+        selectAll: function() {
+          var allCodes = this.availableCountries.map(c => c.code);
+          this.selected.push(...allCodes.filter(c => this.selected.indexOf(c) == -1));
+        },
+        selectNone: function() {
+          this.selected.splice(0);
+        },
+        sortByPopulation: function() {
+          this.selected.sort((a, b) => {
+            var pop_a = this.core.model.populations.national.get(a).get(this.year);
+            var pop_b = this.core.model.populations.national.get(b).get(this.year);
+            return (pop_a < pop_b) ? -1 : ((pop_a > pop_b) ? 1 : 0);
+          });
+        },
+        textColorBW: function(bgcolor) {
+          contrastWhite = contrast_ratio("#ffffff", bgcolor);
+          contrastBlack = contrast_ratio("#000000", bgcolor);
+          return contrastWhite > contrastBlack ? "#ffffff" : "#000000";
+        },
+        incrementYear: function() {
+          if (this.series && this.year < this.series.maxYear())
+            this.year++;
+        },
+        decrementYear: function() {
+          if (this.series && this.year > this.series.minYear())
+            this.year--;          
+        },
+        keyup: function(e) {
+          switch (e.keyCode) {
+            case 37: this.decrementYear(); break;
+            case 39: this.incrementYear(); break;
+          }
+          return true;
+        }
+      },
+      watch: {
+        series: function(newSeries) {
+          if (this.year < newSeries.minYear())
+            this.year = newSeries.minYear();
+          else if (this.year > newSeries.maxYear())
+            this.year = newSeries.maxYear();
+          else
+            this.year = this.year;
+        }
+      },
+      filters: {
+        percentage: function (val, dp = 1) {
+          if (val)
+            return d3.format("."+dp+"%")(val);
+          else
+            return val;
+        },
+        human: function(val, bigdp = 1) {
+          if (val)
+            if (val > 1e9)
+              return d3.format(bigdp > 0 ? ("."+bigdp+"f") : "d")(val / 1e9) + " billion";
+            else if (val > 1e6)
+              return d3.format(bigdp > 0 ? ("."+bigdp+"f") : "d")(val / 1e6) + " million";
+            else
+              return d3.format(",d")(val);
+          else
+            return val; 
+        },
+        fixed: function(val, dp = 2) {
+          return d3.format(dp > 0 ? ("."+dp+"f") : "d")(val);
+        },
+        currency: function(val, symbol, dp = 2) {
+          if (val)
+            return symbol + " " + d3.format(dp > 0 ? ("." + dp+"f") : "d")(val);
+          else
+            return val
+        }
+      }
+    })
     
-<p>
-<table><tr>
-    <td><select id="countries_available" multiple style="width: 20em; height: 10em"></select></td>
-    <td><table>
-        <tr><td><input type="button" id="removeall" value="<<"></input></td></tr>
-        <tr><td><input type="button" id="remove" value="<"></input></td></tr>
-        <tr><td><input type="button" id="add" value=">"></input></td></tr>
-        <tr><td><input type="button" id="addall" value=">>"></input></td></tr>
-    </table></td>
-    <td>
-        <select id="countries_selected" multiple style="width: 20em; height: 10em"></select>
-    </td>
-</tr><tr>
-    <td><input type="checkbox" id="stacked" value="Stacked">Stacked</input></td>
-</tr><tr>
-    <td colspan=3>Year: <span id="year_label"></span> <div id="year"></div> </td>
-</tr></table>
-</p>
-<div id="pdf" width="400" height="400"></div>
-<!--
-<svg id="histogram" width="400" height="400"></svg>
-<svg id="cdf" width="400" height="400"></svg>
-<svg id="quantile" width="400" height="400"></svg>
-<svg id="lorenz" width="400" height="400"></svg>
-<svg id="deciles" width="400" height="400"></svg>
--->
-</body>
-<script>
-    
-var app = new Vue({
-  el: '#app',
-  data: {
-    message: 'Hello Vue!'
+    d3.json("../distributions.json?nocache=" + (new Date()).getTime(), function(distributions) {
+        d3.csv("../population.csv", function(populations) {
+            d3.csv("../population_urban.csv", function(populationsUrban) {
+                d3.csv("../population_rural.csv", function(populationsRural) {
+                    d3.csv("../fce.csv", function(fce) {
+                        d3.csv("../gdp.csv", function(gdp) {
+                            var model = new AllDistributions(
+                                distributions,
+                                populations, populationsUrban, populationsRural,
+                                fce, gdp
+                            )
+                            app.core.model = model;
+                            //document.getElementsByClassName('input-group__selections')[0].style.overflow=""  
+                        });
+                    });
+                });
+            });
+        });
+    });
+
+  function hexToRgb(hex) {
+    var cleanHex = hex.replace(/[^0-9a-fA-F\.]/g, '')
+    var bigint = parseInt(cleanHex, 16);
+    var r = (bigint >> 16) & 255;
+    var g = (bigint >> 8) & 255;
+    var b = bigint & 255;
+
+    return [r,g,b];
   }
-})
 
-var countries = new Map();
-var populations = new Map();
-var selection = new Set();
-
-d3.json("distributions.json?nocache=" + (new Date()).getTime(), function(data) {
-    d3.csv("population.csv", function(popdata) {
-        popdata.forEach(function (d) {
-            key = d['Country Code'];
-            if (!populations.has(key))
-                populations.set(key, new Map());
-                
-            for (year = 1960; year <= 2015; year++)
-                populations.get(key).set(year, +d[year]);
-        });
-        
-        data.forEach(function (svy, i) {
-            if (svy.iso3c == "KSV")
-                svy.iso3c = "XKX"
-            if (svy.iso3c == "TMP")
-                svy.iso3c = "TLS"
-            if (svy.iso3c == "WBG")
-                svy.iso3c = "PSE"
-            if (svy.iso3c == "ZAR")
-                svy.iso3c = "COD"
-            key = svy.iso3c + "-" + svy.source.substring(4,5) + "-" + svy.measure;
-            //console.log(key, svy.source);
-            if (!countries.has(key)) {
-                countries.set(key, new Map());
-            }
-            var popn = populations.get(svy.iso3c).get(svy.year);
-            var dist = new LinearSplinePDFIncomeDistribution(popn, svy.distribution.y, svy.distribution.fy);
-            countries.get(key).set(svy.year, dist);
-        });
-    
-        countries.forEach(function(series, key, map) {
-            // Add country series to dropdown
-            $('#countries_available').append($('<option>', {value: key, text: key})); 
-        
-            var years = Array.from(series.keys()).sort();
-            for (var i = 0; i < years.length - 1; i++) {
-                var dist_a = series.get(years[i]);
-                var dist_b = series.get(years[i+1]);
-            
-                for (year = years[i] + 1; year < years[i+1]; year++) {
-                    var dist = LinearSplinePDFIncomeDistribution.convex_combination(
-                        dist_a,
-                        dist_b,
-                        (year - years[i]) / (years[i+1] - years[i]),
-                        populations.get(key.substring(0,3)).get(year)
-                    );
-                    series.set(year, dist);
-                }
-            }
-        });
-    });
-});
-
-$("#countries_available").dblclick(function() {$("#add").trigger("click")});
-$("#countries_selected").dblclick(function() {$("#remove").trigger("click")});
-$("#add").click(function () {
-    $('#countries_available').val().forEach(function(key) {
-        selection.add(key); 
-    });
-    update();
-});
-
-$("#remove").click(function () {
-    $('#countries_selected').val().forEach(function(key) {
-        selection.delete(key); 
-    });
-    update();
-});
-$("#addall").click(function () {
-    $('#countries_available option').prop('selected', true);
-    $("#add").trigger("click");
-});
-
-$("#removeall").click(function () {
-    $('#countries_selected option').prop('selected', true);
-    $("#remove").trigger("click");
-});
-
-
-function update() {
-    series = [];
-    var min_year = -9999, max_year = 9999;
-    
-    $("#countries_selected").find('option').remove().end();
-    selection.forEach(function(key) {
-        c = countries.get(key);
-        years = Array.from(c.keys()).sort();
-        min_year = Math.max(min_year, years[0]);
-        max_year = Math.min(max_year, years[years.length-1]);
-        series.push(c);
-        $('#countries_selected').append($('<option>', {value: key, text: key + " (" + years[0] + "-" + years[years.length-1] + ")"}));
-    });
-
-    console.log("series", series);
-
-    years = Array.from(years).sort();
-    
-    $( "#year" ).slider({
-        min: min_year,
-        max: max_year,
-        value: $('#year').data("uiSlider") ? $('#year').slider("value") : min_year,
-        slide: function() {
-            year = $(this).slider("value")
-            $("#year_label").text(year); //+ " (" + dist1.fx.length + ")");
-            updateDists(series, year, $("stacked").val());
-        },
-        change: function() {
-            year = $(this).slider("value")
-            $("#year_label").text(year); //+ " (" + dist1.fx.length + ")");
-            updateDists(series, year, $("stacked").val());
-        },
-        create: function() {
-            $(this).slider("value", min_year);
-        }
-    });
-    
-    //console.log("xlim", Math.max(...Array.from(series).map(s => Math.max(...Array.from(s.values()).map(d => d.inv(0.95))))));
-    
-    chart
-        .xlim([0, Math.max(...Array.from(series).map(s => Math.max(...Array.from(s.values()).map(d => d.inv(0.95)))))])
-        .ylim([0, Math.max(...Array.from(series).map(s => Math.max(...Array.from(s.values()).map(d => d.pdf_max(true)))))]);
-    
-}
-
-var chart = pdfChart()
-    .x(d => d.x)
-    .y(d => d.pdf)
-
-function updateDists(series, year, isStacked) {
-    dists = [];
-    for (var i = 0; i < series.length; i++) {
-        if (series[i].has(year)) {
-            dists.push(series[i].get(year));
-        }
-    }
-    if (dists.length > 1) {
-        timeit("[LinearSplinePDFIncomeDistribution.aggregate(dists)];");
-        series = [LinearSplinePDFIncomeDistribution.aggregate(dists)];
-        //console.log("combined");
-        //console.log(series[0]);
-    } else {
-        series = dists;
-    }
-    
-    d3.select("#pdf")
-        .datum(series)
-        .call(chart);
-}
-/******************************************************************************
-* PDF
-******************************************************************************/
-/*
-var svg = d3.select("svg#pdf"),
-    width = +svg.attr("width"),
-    height = +svg.attr("height"),
-    margin = {top: 20, right: 30, bottom: 30, left: 40};
-
-function updateDists(dist, dist2) {
-    updatePDFs(dist, dist2);
-}
-
-function updatePDFs(dist, dist2) {
-    margin = window.margin;
-    svg = window.svg;
-
-    var x = d3.scaleLinear()
-    //var x = d3.scaleLog().base(10)
-        .domain([dist.inv(0.001),dist.inv(0.99)])
-        .range([margin.left, width - margin.right]);
-
-    var grid = dist.grid(1000, false, x.domain());
-    var grid2 = dist2.grid(1000, false, x.domain());
-
-    var y = d3.scaleLinear()
-        .domain([0, Math.max(...grid.map(d => d.pdf))])
-        .range([height - margin.bottom, margin.top]);
-
-    svg.append("g")
-        .attr("class", "axis axis--x")
-        .attr("transform", "translate(0," + (height - margin.bottom) + ")")
-        .call(d3.axisBottom(x));
-
-    svg.append("g")
-        .attr("class", "axis axis--y")
-        .attr("transform", "translate(" + margin.left + ",0)")
-        .call(d3.axisLeft(y).ticks(null, ".1e"));
-
-    var path = svg.selectAll("path").datum(grid);
-    
-    path.enter().append("path")
-        .datum(grid)
-        .attr("fill", "none")
-        .attr("stroke", "blue")
-        .attr("stroke-width", 1.5)
-        .attr("stroke-linejoin", "round")
-        .attr("d", d3.line()
-        .x(function(d) { return x(d.x); })
-        .y(function(d) { return y((d.pdf)); }));
-
-    path.exit().remove();
-
-    svg.append("text")
-        .attr("x", margin.left+(width-margin.left-margin.right)/2)             
-        .attr("y", margin.top * 2)
-        .attr("text-anchor", "middle")  
-        .style("font-size", "16px") 
-        .text("PDF");
-    
-}
-*/    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-function nothing() {
- /******************************************************************************
- * CDF
- ******************************************************************************/
- var svg = d3.select("svg#cdf"),
-     width = +svg.attr("width"),
-     height = +svg.attr("height"),
-     margin = {top: 20, right: 30, bottom: 30, left: 40};
-
- var x = d3.scaleLinear()
-     .domain([dist.inv(0.001),dist.inv(0.99)])
-     .range([margin.left, width - margin.right]);
-
- var grid = dist.grid(1000, false, x.domain());
- var grid2 = dist2.grid(1000, false, x.domain());
-
- var y = d3.scaleLinear()
-     .domain([0, 1])
-     .range([height - margin.bottom, margin.top]);
-
- svg.append("g")
-     .attr("class", "axis axis--x")
-     .attr("transform", "translate(0," + (height - margin.bottom) + ")")
-     .call(d3.axisBottom(x));
-
- svg.append("g")
-     .attr("class", "axis axis--y")
-     .attr("transform", "translate(" + margin.left + ",0)")
-     .call(d3.axisLeft(y));
-
-  svg.append("path")
-       .datum(grid)
-       .attr("fill", "none")
-       .attr("stroke", "blue")
-       .attr("stroke-width", 1.5)
-       .attr("stroke-linejoin", "round")
-       .attr("d", d3.line()
-         //.curve(d3.curveCardinal)
-      .x(function(d) { return x(d.x); })
-         .y(function(d) { return y((d.cdf)); }));
-
-  svg.append("path")
-       .datum(grid2)
-       .attr("fill", "none")
-       .attr("stroke", "red")
-       .attr("stroke-width", 1.5)
-       .attr("stroke-linejoin", "round")
-       .attr("d", d3.line()
-         //.curve(d3.curveCardinal)
-      .x(function(d) { return x(d.x); })
-         .y(function(d) { return y((d.cdf)); }));
-       
- svg.append("text")
-        .attr("x", margin.left+(width-margin.left-margin.right)/2)             
-        .attr("y", margin.top * 2)
-        .attr("text-anchor", "middle")  
-        .style("font-size", "16px") 
-         .text("CDF");
-
-       
- /******************************************************************************
- * Quantile
- ******************************************************************************/
-var svg = d3.select("svg#quantile"),
- width = +svg.attr("width"),
- height = +svg.attr("height"),
- margin = {top: 20, right: 30, bottom: 30, left: 40};
-
-var x = d3.scaleLinear()
- .domain([0, 1])
- .range([margin.left, width - margin.right]);
- 
-var xgrid = [];
-for (var i = 0; i < 1; i += 1/1000) {
-    xgrid.push(i);
-}
-
-var grid = d3.transpose([xgrid, dist.inv(xgrid)]);
-var grid2 = d3.transpose([xgrid, dist2.inv(xgrid)]);
-
-var y = d3.scaleLinear()
- .domain([0, dist.inv(0.999)])
- .range([height - margin.bottom, margin.top]);
-
-svg.append("g")
- .attr("class", "axis axis--x")
- .attr("transform", "translate(0," + (height - margin.bottom) + ")")
- .call(d3.axisBottom(x));
-
-svg.append("g")
- .attr("class", "axis axis--y")
- .attr("transform", "translate(" + margin.left + ",0)")
- .call(d3.axisLeft(y));
-
-svg.append("path")
-   .datum(grid)
-   .attr("fill", "none")
-   .attr("stroke", "blue")
-   .attr("stroke-width", 1.5)
-   .attr("stroke-linejoin", "round")
-   .attr("d", d3.line()
-     //.curve(d3.curveCardinal)
-  .x(function(d) { return x(d[0]); })
-     .y(function(d) { return y((d[1])); }));
-     
-svg.append("path")
-   .datum(grid2)
-   .attr("fill", "none")
-   .attr("stroke", "red")
-   .attr("stroke-width", 1.5)
-   .attr("stroke-linejoin", "round")
-   .attr("d", d3.line()
-     
-     //.curve(d3.curveCardinal)
-  .x(function(d) { return x(d[0]); })
-     .y(function(d) { return y((d[1])); }));
-svg.append("text")
-        .attr("x", margin.left+(width-margin.left-margin.right)/2)             
-        .attr("y", margin.top * 2)
-        .attr("text-anchor", "middle")  
-        .style("font-size", "16px") 
-        .text("Quantile function");
-
- /******************************************************************************
- * Lorenz
- ******************************************************************************/
-var svg = d3.select("svg#lorenz"),
- width = +svg.attr("width"),
- height = +svg.attr("height"),
- margin = {top: 20, right: 30, bottom: 30, left: 40};
-
-var x = d3.scaleLinear()
- .domain([0, 1])
- .range([margin.left, width - margin.right]);
-
-var xgrid = [];
-for (var i = 0; i < 1; i += 1/1000) {
-    xgrid.push(i);
-}
-
-var grid = d3.transpose([xgrid, dist.lorenz(xgrid)]);
-var grid2 = d3.transpose([xgrid, dist2.lorenz(xgrid)]);
-
-var y = d3.scaleLinear()
- .domain([0, Math.max(...grid.map(d => d[1]))])
- .range([height - margin.bottom, margin.top]);
-
-svg.append("g")
- .attr("class", "axis axis--x")
- .attr("transform", "translate(0," + (height - margin.bottom) + ")")
- .call(d3.axisBottom(x));
-
-svg.append("g")
- .attr("class", "axis axis--y")
- .attr("transform", "translate(" + margin.left + ",0)")
- .call(d3.axisLeft(y));
-
-svg.append("path")
-   .datum(grid)
-   .attr("fill", "none")
-   .attr("stroke", "blue")
-   .attr("stroke-width", 1.5)
-   .attr("stroke-linejoin", "round")
-   .attr("d", d3.line()
-     //.curve(d3.curveCardinal)
-  .x(function(d) { return x(d[0]); })
-     .y(function(d) { return y((d[1])); }));
-     
-svg.append("path")
-   .datum(grid2)
-   .attr("fill", "none")
-   .attr("stroke", "red")
-   .attr("stroke-width", 1.5)
-   .attr("stroke-linejoin", "round")
-   .attr("d", d3.line()
-     //.curve(d3.curveCardinal)
-  .x(function(d) { return x(d[0]); })
-     .y(function(d) { return y((d[1])); }));
-
-svg.append("text")
-        .attr("x", margin.left+(width-margin.left-margin.right)/2)             
-        .attr("y", margin.top * 2)
-        .attr("text-anchor", "middle")  
-        .style("font-size", "16px") 
-        .text("Lorenz curve (not normalized to mean)");
-
- /******************************************************************************
- * Deciles
- ******************************************************************************/
-     
- var domain = ["bottom 10%", "10-20%","20-30%","30-40%","40-50%","50-60%","60-70%","70-80%","80-90%","top 10%"];
-
- var deciles = d3.transpose([
-     domain, 
-     dist.deciles()
- ]);
-
- var deciles2 = d3.transpose([
-     domain, 
-     dist2.deciles()
- ]);
-
- var svg = d3.select("svg#deciles"),
-     width = +svg.attr("width"),
-     height = +svg.attr("height"),
-     margin = {top: 20, right: 30, bottom: 70, left: 40};
-
- var x = d3.scaleBand()
-     .domain(domain)
-     .rangeRound([margin.left, width - margin.right])
-     .padding(0.1);
-
- var y = d3.scaleLinear()
-     .domain([0, Math.max(...deciles.map(d => d[1]))])
-     .range([height - margin.bottom, margin.top]);
-
-
- svg.append("g")
-     .attr("class", "axis axis--x")
-     .attr("transform", "translate(0," + (height - margin.bottom) + ")")
-     .call(d3.axisBottom(x))
-     .selectAll("text")
-     .attr("y", 0)
-     .attr("x", 9)
-     .attr("dy", ".35em")
-     .attr("transform", "rotate(90)")
-     .style("text-anchor", "start");
-     
- svg.append("g")
-     .attr("class", "axis axis--y")
-     .attr("transform", "translate(" + margin.left + ",0)")
-     .call(d3.axisLeft(y).ticks(null, "s"));
-
-  svg.insert("g", "*")
-      .attr("fill", "blue")
-     .attr("opacity", 0.5)
-    .selectAll("rect")
-    .data(deciles)
-    .enter().append("rect")
-      .attr("x", function(d) { return x(d[0]); })
-      .attr("y", function(d) { return y(d[1]); })
-     .attr("width", x.bandwidth())
-      .attr("height", function(d) { return (y(0) - y(d[1])); });
-
-  svg.insert("g", "*")
-      .attr("fill", "red")
-     .attr("opacity", 0.5)
-    .selectAll("rect")
-    .data(deciles2)
-    .enter().append("rect")
-      .attr("x", function(d) { return x(d[0]); })
-      .attr("y", function(d) { return y(d[1]); })
-     .attr("width", x.bandwidth())
-      .attr("height", function(d) { return (y(0) - y(d[1])); });
-
-svg.append("text")
-        .attr("x", margin.left+(width-margin.left-margin.right)/2)             
-        .attr("y", margin.top * 2)
-        .attr("text-anchor", "middle")  
-        .style("font-size", "16px") 
-        .text("Mean by deciles");
-        
-    /******************************************************************************
-    * Histogram
-    ******************************************************************************/
-
-    var x = d3.scaleLinear()
-        .domain([dist.inv(0.001),dist.inv(0.99)])
-        .range([margin.left, width - margin.right]);
-
-    var hist = dist.histogram(50, true, x.domain());
-    var hist2 = dist2.histogram(50, true, x.domain());
-
-    var y = d3.scaleLinear()
-        .domain([0, Math.max(...hist.map(d => d.hist))])
-        .range([height - margin.bottom, margin.top]);
-
-    var svg = d3.select("svg#histogram"),
-        width = +svg.attr("width"),
-        height = +svg.attr("height"),
-        margin = {top: 20, right: 30, bottom: 30, left: 40};
-
-    svg.append("g")
-        .attr("class", "axis axis--x")
-        .attr("transform", "translate(0," + (height - margin.bottom) + ")")
-        .call(d3.axisBottom(x));
-
-    svg.append("g")
-        .attr("class", "axis axis--y")
-        .attr("transform", "translate(" + margin.left + ",0)")
-        .call(d3.axisLeft(y).ticks(null, "s"));
-
-     svg.insert("g", "*")
-         .attr("fill", "blue")
-         .attr("opacity", 0.5)
-       .selectAll("rect")
-       .data(hist)
-       .enter().append("rect")
-         .attr("x", function(d) { return x(d.xmin) + 1; })
-         .attr("y", function(d) { return y(d.hist); })
-         .attr("width", function(d) { return x(d.xmax) - x(d.xmin) - 1; })
-         .attr("height", function(d) { return (y(0) - y(d.hist)); });
-
-     svg.insert("g", "*")
-         .attr("fill", "red")
-         .attr("opacity", 0.5)
-       .selectAll("rect")
-       .data(hist2)
-       .enter().append("rect")
-         .attr("class", "d2r")
-         .attr("x", function(d) { return x(d.xmin) + 1; })
-         .attr("y", function(d) { return y(d.hist); })
-         .attr("width", function(d) { return x(d.xmax) - x(d.xmin) - 1; })
-         .attr("height", function(d) { return (y(0) - y(d.hist)); });
-     
-    svg.append("text")
-            .attr("x", margin.left+(width-margin.left-margin.right)/2)             
-            .attr("y", margin.top * 2)
-            .attr("text-anchor", "middle")  
-            .style("font-size", "16px") 
-            .text("Histogram");
-}
-
-//$('#gini').on('input',function() {
-//    gini = $(this).val() ;
-//
-//    dist2 = new LogNormalIncomeDistribution(25e6, 563.573, gini/100);
-//
-//    var hist2 = dist2.histogram(50, true, x.domain());
-//    var svg = d3.select("svg#histogram");
-//    svg.selectAll("rect.d2r")
-//        .data(hist2)
-//        .transition(d3.transition().duration(50))
-//        .attr("y", function(d) { return y(d.hist); })
-//        .attr("height", function(d) { return (y(0) - y(d.hist)); });
-// 
-//     //rects.exit().remove();
-// });
-
-</script>
+  function relative_luminance(rgb) {
+    cg = rgb.map(c => (c <= 10 ? c/3294 : (c/269 + 0.0513)**2.4))
+    L = 0.2126 * cg[0] + 0.7152 * cg[1] + 0.0722 * cg[2]
+    return L
+  }
+
+  function contrast_ratio (a, b) {
+    // http://ux.stackexchange.com/a/82068
+    rgb_a = hexToRgb(a);
+    rgb_b = hexToRgb(b);
+    L_a = relative_luminance(rgb_a);
+    L_b = relative_luminance(rgb_b);
+    L_big = L_a > L_b ? L_a : L_b;
+    L_small = L_a > L_b ? L_b : L_a;
+    return (L_big + 0.05) / (L_small + 0.05);
+  }
+  
+    document.getElementsByClassName('input-group__selections')[0].style.overflow=""  
+  </script>
+</body>
+</html>

@@ -328,11 +328,12 @@
       }
     })
     
-    d3.json("../distributions.json?nocache=" + (new Date()).getTime(), function(distributions) {
-        d3.csv("../population.csv", function(populations) {
-            d3.csv("../population_urban.csv", function(populationsUrban) {
-                d3.csv("../population_rural.csv", function(populationsRural) {
-                    d3.csv("../fce.csv", function(fce) {
+    // there's definitely a better way to do this :-)
+    d3.json("distributions.json?nocache=" + (new Date()).getTime(), function(distributions) {
+        d3.csv("population.csv", function(populations) {
+            d3.csv("population_urban.csv", function(populationsUrban) {
+                d3.csv("population_rural.csv", function(populationsRural) {
+                    d3.csv("fce.csv", function(fce) {
                         d3.csv("../gdp.csv", function(gdp) {
                             var model = new AllDistributions(
                                 distributions,

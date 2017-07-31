@@ -74,7 +74,7 @@
           <br>
             <v-layout row wrap v-if="series">
               <v-flex xs12 v-if="series">
-                <v-slider v-model="year" thumb-label v-bind:min="series.minYear()" v-bind:max="series.maxYear()" step="1" v-bind:label="'Year '+year" @keyup.left="decrementYear" @keyup.right="incrementYear"></v-slider>
+                <v-slider v-model="year" thumb-label v-bind:min="series.minYear()" v-bind:max="series.maxYear()" step="1" v-bind:label="year" @keyup.left="decrementYear" @keyup.right="incrementYear"></v-slider>
               </v-flex>
               <v-flex xs7>
                 <v-tabs grow centered dark v-model="currentTab">
